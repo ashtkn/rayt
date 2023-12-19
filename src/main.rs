@@ -191,7 +191,7 @@ impl SimpleScene {
     }
 }
 
-impl Scene for SimpleScene {
+impl SceneWithDepth for SimpleScene {
     fn camera(&self) -> Camera {
         Camera::new(
             Vec3::new(4.0, 0.0, 0.0),
@@ -199,12 +199,16 @@ impl Scene for SimpleScene {
             Vec3::new(-2.0, -1.0, -1.0),
         )
     }
-    fn trace(&self, ray: Ray) -> Color {
+    fn trace(&self, ray: Ray, depth: usize) -> Color {
         let hit_info = self.world.hit(&ray, 0.001, f64::MAX);
         if let Some(hit) = hit_info {
-            let scatter_info = hit.m.scatter(&ray, &hit);
+            let scatter_info = if depth > 0 {
+                hit.m.scatter(&ray, &hit)
+            } else {
+                None
+            };
             if let Some(scatter) = scatter_info {
-                return scatter.albedo * self.trace(scatter.ray);
+                return scatter.albedo * self.trace(scatter.ray, depth - 1);
             } else {
                 return Color::zero();
             }
@@ -215,5 +219,5 @@ impl Scene for SimpleScene {
 }
 
 fn main() {
-    render_aa(SimpleScene::new());
+    render_aa_with_depth(SimpleScene::new());
 }
