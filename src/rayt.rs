@@ -10,6 +10,9 @@ pub use self::ray::Ray;
 mod camera;
 pub use self::camera::Camera;
 
+mod window;
+pub use self::window::*;
+
 pub use std::f64::consts::FRAC_1_PI;
 pub use std::f64::consts::PI;
 

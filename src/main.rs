@@ -8,6 +8,17 @@ use crate::rayt::*;
 
 const IMAGE_WIDTH: u32 = 200;
 const IMAGE_HEIGHT: u32 = 100;
+const OUTPUT_FILENAME: &str = "render.png";
+const BACKUP_FILENAME: &str = "render_back.png";
+
+fn backup() {
+    let output_path = std::path::Path::new(OUTPUT_FILENAME);
+    if output_path.exists() {
+        println!("backup {:?} -> {:?}", OUTPUT_FILENAME, BACKUP_FILENAME);
+        // replacing the original file if it is
+        std::fs::rename(OUTPUT_FILENAME, BACKUP_FILENAME).unwrap();
+    }
+}
 
 fn hit_sphere(center: Point3, radius: f64, ray: &Ray) -> f64 {
     let oc = ray.origin - center;
@@ -35,6 +46,8 @@ fn color(ray: Ray) -> Color {
 }
 
 fn main() {
+    backup();
+
     let camera = Camera::new(
         Vec3::new(4.0, 0.0, 0.0),
         Vec3::new(0.0, 2.0, 0.0),
@@ -53,5 +66,6 @@ fn main() {
             pixel[1] = rgb[1];
             pixel[2] = rgb[2];
         });
-    img.save(String::from("render.png")).unwrap();
+    img.save(String::from(OUTPUT_FILENAME)).unwrap();
+    draw_in_window(BACKUP_FILENAME, img).unwrap();
 }
