@@ -169,23 +169,30 @@ impl Dielectric {
     const fn new(ri: f64) -> Self {
         Self { ri }
     }
+    // Schlick 近似
+    fn schlick(cosine: f64, ri: f64) -> f64 {
+        let r0 = ((1.0 - ri) / (1.0 + ri)).powi(2);
+        r0 + (1.0 - r0) * (1.0 - cosine).powi(5)
+    }
 }
 
 impl Material for Dielectric {
     fn scatter(&self, ray: &Ray, hit: &HitInfo) -> Option<ScatterInfo> {
         let reflected = ray.direction.reflect(hit.n);
-        let (outward_normal, ni_over_nt) = {
-            if ray.direction.dot(hit.n) > 0.0 {
-                (-hit.n, self.ri)
+        let (outward_normal, ni_over_nt, cosine) = {
+            let dot = ray.direction.dot(hit.n);
+            if dot > 0.0 {
+                (-hit.n, self.ri, self.ri * dot / ray.direction.length())
             } else {
-                (hit.n, self.ri.recip())
+                (hit.n, self.ri.recip(), -dot / ray.direction.length())
             }
         };
         if let Some(refracted) = (-ray.direction).refract(outward_normal, ni_over_nt) {
-            Some(ScatterInfo::new(Ray::new(hit.p, refracted), Color::one()))
-        } else {
-            Some(ScatterInfo::new(Ray::new(hit.p, reflected), Color::one()))
+            if Vec3::random_fill().x() > Self::schlick(cosine, self.ri) {
+                return Some(ScatterInfo::new(Ray::new(hit.p, refracted), Color::one()));
+            }
         }
+        Some(ScatterInfo::new(Ray::new(hit.p, reflected), Color::one()))
     }
 }
 
