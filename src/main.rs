@@ -161,6 +161,34 @@ impl Material for Metal {
     }
 }
 
+struct Dielectric {
+    ri: f64,
+}
+
+impl Dielectric {
+    const fn new(ri: f64) -> Self {
+        Self { ri }
+    }
+}
+
+impl Material for Dielectric {
+    fn scatter(&self, ray: &Ray, hit: &HitInfo) -> Option<ScatterInfo> {
+        let reflected = ray.direction.reflect(hit.n);
+        let (outward_normal, ni_over_nt) = {
+            if ray.direction.dot(hit.n) > 0.0 {
+                (-hit.n, self.ri)
+            } else {
+                (hit.n, self.ri.recip())
+            }
+        };
+        if let Some(refracted) = (-ray.direction).refract(outward_normal, ni_over_nt) {
+            Some(ScatterInfo::new(Ray::new(hit.p, refracted), Color::one()))
+        } else {
+            Some(ScatterInfo::new(Ray::new(hit.p, reflected), Color::one()))
+        }
+    }
+}
+
 struct SimpleScene {
     world: ShapeList,
 }
@@ -174,9 +202,14 @@ impl SimpleScene {
             Arc::new(Lambertian::new(Color::new(0.1, 0.2, 0.5))),
         )));
         world.push(Box::new(Sphere::new(
-            Point3::new(-0.6, -0.0, -1.0),
+            Point3::new(-0.6, 0.0, -1.0),
             0.5,
-            Arc::new(Metal::new(Color::new(0.8, 0.8, 0.8), 0.5)),
+            Arc::new(Dielectric::new(1.5)),
+        )));
+        world.push(Box::new(Sphere::new(
+            Point3::new(-0.0, -0.35, -0.8),
+            0.15,
+            Arc::new(Metal::new(Color::new(0.8, 0.8, 0.8), 0.2)),
         )));
         world.push(Box::new(Sphere::new(
             Point3::new(0.0, -100.5, -1.0),

@@ -254,3 +254,16 @@ impl Float3 {
         *self - 2.0 * self.dot(normal) * normal
     }
 }
+
+impl Float3 {
+    pub fn refract(&self, normal: Self, ni_over_nt: f64) -> Option<Float3> {
+        let uv = self.normalize();
+        let dt = uv.dot(normal);
+        let d = 1.0 - ni_over_nt.powi(2) * (1.0 - dt.powi(2));
+        if d > 0.0 {
+            Some(-ni_over_nt * (uv - normal * dt) - normal * d.sqrt())
+        } else {
+            None
+        }
+    }
+}
