@@ -138,6 +138,27 @@ impl Material for Lambertian {
     }
 }
 
+struct Metal {
+    albedo: Color,
+}
+
+impl Metal {
+    fn new(albedo: Color) -> Self {
+        Self { albedo }
+    }
+}
+
+impl Material for Metal {
+    fn scatter(&self, ray: &Ray, hit: &HitInfo) -> Option<ScatterInfo> {
+        let reflected = ray.direction.normalize().reflect(hit.n);
+        if reflected.dot(hit.n) > 0.0 {
+            Some(ScatterInfo::new(Ray::new(hit.p, reflected), self.albedo))
+        } else {
+            None
+        }
+    }
+}
+
 struct SimpleScene {
     world: ShapeList,
 }
@@ -153,7 +174,7 @@ impl SimpleScene {
         world.push(Box::new(Sphere::new(
             Point3::new(-0.6, -0.0, -1.0),
             0.5,
-            Arc::new(Lambertian::new(Color::new(0.8, 0.0, 0.0))),
+            Arc::new(Metal::new(Color::new(0.8, 0.8, 0.8))),
         )));
         world.push(Box::new(Sphere::new(
             Point3::new(0.0, -100.5, -1.0),
