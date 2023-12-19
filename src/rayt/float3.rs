@@ -237,6 +237,9 @@ impl Float3 {
             }
         }
     }
+}
+
+impl Float3 {
     pub fn gamma(&self, factor: f64) -> Self {
         let recip = factor.recip();
         Self::from_iter(self.0.iter().map(|x| x.powf(recip)))
@@ -244,6 +247,9 @@ impl Float3 {
     pub fn degamma(&self, factor: f64) -> Self {
         Self::from_iter(self.0.iter().map(|x| x.powf(factor)))
     }
+}
+
+impl Float3 {
     pub fn reflect(&self, normal: Self) -> Self {
         *self - 2.0 * self.dot(normal) * normal
     }
