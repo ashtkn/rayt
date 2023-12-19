@@ -140,17 +140,19 @@ impl Material for Lambertian {
 
 struct Metal {
     albedo: Color,
+    fuzz: f64,
 }
 
 impl Metal {
-    fn new(albedo: Color) -> Self {
-        Self { albedo }
+    fn new(albedo: Color, fuzz: f64) -> Self {
+        Self { albedo, fuzz }
     }
 }
 
 impl Material for Metal {
     fn scatter(&self, ray: &Ray, hit: &HitInfo) -> Option<ScatterInfo> {
-        let reflected = ray.direction.normalize().reflect(hit.n);
+        let mut reflected = ray.direction.normalize().reflect(hit.n);
+        reflected = reflected + self.fuzz * Vec3::random_in_unit_sphere();
         if reflected.dot(hit.n) > 0.0 {
             Some(ScatterInfo::new(Ray::new(hit.p, reflected), self.albedo))
         } else {
@@ -174,7 +176,7 @@ impl SimpleScene {
         world.push(Box::new(Sphere::new(
             Point3::new(-0.6, -0.0, -1.0),
             0.5,
-            Arc::new(Metal::new(Color::new(0.8, 0.8, 0.8))),
+            Arc::new(Metal::new(Color::new(0.8, 0.8, 0.8), 0.5)),
         )));
         world.push(Box::new(Sphere::new(
             Point3::new(0.0, -100.5, -1.0),
