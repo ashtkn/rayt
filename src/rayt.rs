@@ -13,6 +13,9 @@ pub use self::camera::Camera;
 mod window;
 pub use self::window::*;
 
+mod render;
+pub use self::render::*;
+
 pub use std::f64::consts::FRAC_1_PI;
 pub use std::f64::consts::PI;
 
