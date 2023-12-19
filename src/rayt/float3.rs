@@ -229,4 +229,12 @@ impl Float3 {
     pub fn random_limit(min: f64, max: f64) -> Self {
         Self::from_iter(Self::random().0.iter().map(|x| min + x * (max - min)))
     }
+    pub fn random_in_unit_sphere() -> Self {
+        loop {
+            let point = Self::random_limit(-1.0, 1.0);
+            if point.length() < 1.0 {
+                return point;
+            }
+        }
+    }
 }
