@@ -8,6 +8,7 @@ const IMAGE_HEIGHT: u32 = 100;
 const OUTPUT_FILENAME: &str = "render.png";
 const BACKUP_FILENAME: &str = "render_back.png";
 const SAMPLES_PER_PIXEL: usize = 8;
+const GAMMA_FACTOR: f64 = 2.2;
 
 fn backup() {
     let output_path = std::path::Path::new(OUTPUT_FILENAME);
@@ -77,7 +78,7 @@ pub fn render_aa(scene: impl Scene + Sync) {
                 acc + scene.trace(ray)
             });
             pixel_color /= scene.spp() as f64;
-            let rgb = pixel_color.to_rgb();
+            let rgb = pixel_color.gamma(GAMMA_FACTOR).to_rgb();
             pixel[0] = rgb[0];
             pixel[1] = rgb[1];
             pixel[2] = rgb[2];
