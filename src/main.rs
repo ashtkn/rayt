@@ -244,69 +244,6 @@ impl Texture for CheckerTexture {
     }
 }
 
-struct SimpleScene {
-    world: ShapeList,
-}
-
-impl SimpleScene {
-    fn new() -> Self {
-        let mut world = ShapeList::new();
-        world.push(
-            ShapeBuilder::new()
-                .color_texture(Color::new(0.1, 0.2, 0.5))
-                .lambertian()
-                .sphere(Point3::new(0.6, 0.0, -1.0), 0.5)
-                .build(),
-        );
-        world.push(
-            ShapeBuilder::new()
-                .color_texture(Color::new(0.8, 0.8, 0.8))
-                .metal(0.4)
-                .sphere(Point3::new(-0.6, 0.0, -1.0), 0.5)
-                .build(),
-        );
-        world.push(
-            ShapeBuilder::new()
-                .checker_texture(Color::new(0.8, 0.8, 0.0), Color::new(0.8, 0.2, 0.0), 10.0)
-                .lambertian()
-                .sphere(Point3::new(0.0, -100.5, -1.0), 100.0)
-                .build(),
-        );
-        Self { world }
-    }
-    fn background(&self, d: Vec3) -> Color {
-        let t = 0.5 * (d.normalize().y() + 1.0);
-        Color::one().lerp(Color::new(0.5, 0.7, 1.0), t)
-    }
-}
-
-impl SceneWithDepth for SimpleScene {
-    fn camera(&self) -> Camera {
-        Camera::new(
-            Vec3::new(4.0, 0.0, 0.0),
-            Vec3::new(0.0, 2.0, 0.0),
-            Vec3::new(-2.0, -1.0, -1.0),
-        )
-    }
-    fn trace(&self, ray: Ray, depth: usize) -> Color {
-        let hit_info = self.world.hit(&ray, 0.001, f64::MAX);
-        if let Some(hit) = hit_info {
-            let scatter_info = if depth > 0 {
-                hit.m.scatter(&ray, &hit)
-            } else {
-                None
-            };
-            if let Some(scatter) = scatter_info {
-                return scatter.albedo * self.trace(scatter.ray, depth - 1);
-            } else {
-                return Color::zero();
-            }
-        } else {
-            self.background(ray.direction)
-        }
-    }
-}
-
 struct ShapeBuilder {
     texture: Option<Box<dyn Texture>>,
     material: Option<Arc<dyn Material>>,
@@ -371,6 +308,69 @@ impl ShapeBuilder {
 
     fn build(self) -> Box<dyn Shape> {
         self.shape.unwrap()
+    }
+}
+
+struct SimpleScene {
+    world: ShapeList,
+}
+
+impl SimpleScene {
+    fn new() -> Self {
+        let mut world = ShapeList::new();
+        world.push(
+            ShapeBuilder::new()
+                .color_texture(Color::new(0.1, 0.2, 0.5))
+                .lambertian()
+                .sphere(Point3::new(0.6, 0.0, -1.0), 0.5)
+                .build(),
+        );
+        world.push(
+            ShapeBuilder::new()
+                .color_texture(Color::new(0.8, 0.8, 0.8))
+                .metal(0.4)
+                .sphere(Point3::new(-0.6, 0.0, -1.0), 0.5)
+                .build(),
+        );
+        world.push(
+            ShapeBuilder::new()
+                .checker_texture(Color::new(0.8, 0.8, 0.0), Color::new(0.8, 0.2, 0.0), 10.0)
+                .lambertian()
+                .sphere(Point3::new(0.0, -100.5, -1.0), 100.0)
+                .build(),
+        );
+        Self { world }
+    }
+    fn background(&self, d: Vec3) -> Color {
+        let t = 0.5 * (d.normalize().y() + 1.0);
+        Color::one().lerp(Color::new(0.5, 0.7, 1.0), t)
+    }
+}
+
+impl SceneWithDepth for SimpleScene {
+    fn camera(&self) -> Camera {
+        Camera::new(
+            Vec3::new(4.0, 0.0, 0.0),
+            Vec3::new(0.0, 2.0, 0.0),
+            Vec3::new(-2.0, -1.0, -1.0),
+        )
+    }
+    fn trace(&self, ray: Ray, depth: usize) -> Color {
+        let hit_info = self.world.hit(&ray, 0.001, f64::MAX);
+        if let Some(hit) = hit_info {
+            let scatter_info = if depth > 0 {
+                hit.m.scatter(&ray, &hit)
+            } else {
+                None
+            };
+            if let Some(scatter) = scatter_info {
+                return scatter.albedo * self.trace(scatter.ray, depth - 1);
+            } else {
+                return Color::zero();
+            }
+        } else {
+            self.background(ray.direction)
+        }
     }
 }
 
