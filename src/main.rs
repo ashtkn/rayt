@@ -240,6 +240,54 @@ impl Texture for CheckerTexture {
     }
 }
 
+struct ImageTexture {
+    pixels: Vec<Color>,
+    width: usize,
+    height: usize,
+}
+
+impl ImageTexture {
+    fn new(path: &str) -> Self {
+        let rgb_img = image::open(path).unwrap().to_rgb8();
+        let (w, h) = rgb_img.dimensions();
+        let mut image = vec![Color::zero(); (w * h) as usize];
+        for (i, (_, _, pixel)) in image.iter_mut().zip(rgb_img.enumerate_pixels()) {
+            *i = Color::from_rgb(pixel[0], pixel[1], pixel[2]);
+        }
+        Self {
+            pixels: image,
+            width: w as usize,
+            height: h as usize,
+        }
+    }
+
+    fn sample(&self, u: i64, v: i64) -> Color {
+        let tu = if u < 0 {
+            0
+        } else if u as usize >= self.width {
+            self.width - 1
+        } else {
+            u as usize
+        };
+        let tv = if v < 0 {
+            0
+        } else if v as usize >= self.height {
+            self.height - 1
+        } else {
+            v as usize
+        };
+        self.pixels[tu + self.width * tv]
+    }
+}
+
+impl Texture for ImageTexture {
+    fn value(&self, u: f64, v: f64, _p: Point3) -> Color {
+        let x = (u * self.width as f64) as i64;
+        let y = ((1.0 - v) * self.height as f64) as i64;
+        self.sample(x, y)
+    }
+}
+
 struct ShapeBuilder {
     texture: Option<Box<dyn Texture>>,
     material: Option<Arc<dyn Material>>,
@@ -268,6 +316,11 @@ impl ShapeBuilder {
             Box::new(ColorTexture::new(even_color)),
             freq,
         )));
+        self
+    }
+
+    fn image_texture(mut self, path: &str) -> Self {
+        self.texture = Some(Box::new(ImageTexture::new(path)));
         self
     }
 
@@ -316,7 +369,7 @@ impl SimpleScene {
         let mut world = ShapeList::new();
         world.push(
             ShapeBuilder::new()
-                .color_texture(Color::new(0.1, 0.2, 0.5))
+                .image_texture("resources/Bricks082A_1K_Color.jpg")
                 .lambertian()
                 .sphere(Point3::new(0.6, 0.0, -1.0), 0.5)
                 .build(),
