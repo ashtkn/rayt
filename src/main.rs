@@ -221,6 +221,29 @@ impl Texture for ColorTexture {
     }
 }
 
+struct CheckerTexture {
+    odd: Box<dyn Texture>,
+    even: Box<dyn Texture>,
+    freq: f64,
+}
+
+impl CheckerTexture {
+    fn new(odd: Box<dyn Texture>, even: Box<dyn Texture>, freq: f64) -> Self {
+        Self { odd, even, freq }
+    }
+}
+
+impl Texture for CheckerTexture {
+    fn value(&self, u: f64, v: f64, p: Point3) -> Color {
+        let sines = p.iter().fold(1.0, |acc, x| acc * (x * self.freq).sin());
+        if sines < 0.0 {
+            self.odd.value(u, v, p)
+        } else {
+            self.even.value(u, v, p)
+        }
+    }
+}
+
 struct SimpleScene {
     world: ShapeList,
 }
@@ -244,7 +267,7 @@ impl SimpleScene {
         );
         world.push(
             ShapeBuilder::new()
-                .color_texture(Color::new(0.8, 0.8, 0.0))
+                .checker_texture(Color::new(0.8, 0.8, 0.0), Color::new(0.8, 0.2, 0.0), 10.0)
                 .lambertian()
                 .sphere(Point3::new(0.0, -100.5, -1.0), 100.0)
                 .build(),
@@ -305,6 +328,16 @@ impl ShapeBuilder {
         self.texture = Some(Box::new(ColorTexture::new(color)));
         self
     }
+
+    fn checker_texture(mut self, odd_color: Color, even_color: Color, freq: f64) -> Self {
+        self.texture = Some(Box::new(CheckerTexture::new(
+            Box::new(ColorTexture::new(odd_color)),
+            Box::new(ColorTexture::new(even_color)),
+            freq,
+        )));
+        self
+    }
+
     // Material
 
     fn lambertian(mut self) -> Self {
