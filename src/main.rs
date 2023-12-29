@@ -39,6 +39,12 @@ impl Sphere {
             material,
         }
     }
+
+    fn uv(p: Point3) -> (f64, f64) {
+        let phi = p.z().atan2(p.x());
+        let theta = p.y().asin();
+        (1.0 - (phi + PI) / (2.0 * PI), (theta + PI / 2.0) / PI)
+    }
 }
 
 impl Shape for Sphere {
@@ -53,27 +59,17 @@ impl Shape for Sphere {
             let temp = (-b - d.sqrt()) / (2.0 * a);
             if t0 < temp && temp < t1 {
                 let p = ray.at(temp);
-                return Some(HitInfo::new(
-                    temp,
-                    p,
-                    (p - self.center) / self.radius,
-                    Arc::clone(&self.material),
-                    0.0,
-                    0.0,
-                ));
+                let n = (p - self.center) / self.radius;
+                let (u, v) = Self::uv(n);
+                return Some(HitInfo::new(temp, p, n, Arc::clone(&self.material), u, v));
             }
             // 始点から近いほうの解が光線の衝突範囲含まれないときは遠い方の解を評価
             let temp = (-b + d.sqrt()) / (2.0 * a);
             if t0 < temp && temp < t1 {
                 let p = ray.at(temp);
-                return Some(HitInfo::new(
-                    temp,
-                    p,
-                    (p - self.center) / self.radius,
-                    Arc::clone(&self.material),
-                    0.0,
-                    0.0,
-                ));
+                let n = (p - self.center) / self.radius;
+                let (u, v) = Self::uv(n);
+                return Some(HitInfo::new(temp, p, n, Arc::clone(&self.material), u, v));
             }
         }
         None
