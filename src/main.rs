@@ -76,6 +76,82 @@ impl Shape for Sphere {
     }
 }
 
+enum RectAxisType {
+    XY,
+    XZ,
+    YZ,
+}
+
+struct Rect {
+    x0: f64,
+    x1: f64,
+    y0: f64,
+    y1: f64,
+    k: f64,
+    axis: RectAxisType,
+    material: Arc<dyn Material>,
+}
+
+impl Rect {
+    fn new(
+        x0: f64,
+        x1: f64,
+        y0: f64,
+        y1: f64,
+        k: f64,
+        axis: RectAxisType,
+        material: Arc<dyn Material>,
+    ) -> Self {
+        Self {
+            x0,
+            x1,
+            y0,
+            y1,
+            k,
+            axis,
+            material,
+        }
+    }
+}
+
+impl Shape for Rect {
+    fn hit(&self, ray: &Ray, t0: f64, t1: f64) -> Option<HitInfo> {
+        let mut origin = ray.origin;
+        let mut direction = ray.direction;
+        let mut axis = Vec3::zaxis();
+        match self.axis {
+            RectAxisType::XY => {}
+            RectAxisType::XZ => {
+                origin = Point3::new(origin.x(), origin.z(), origin.y());
+                direction = Vec3::new(direction.x(), direction.z(), direction.y());
+                axis = Vec3::yaxis();
+            }
+            RectAxisType::YZ => {
+                origin = Point3::new(origin.y(), origin.z(), origin.x());
+                direction = Vec3::new(direction.y(), direction.z(), direction.x());
+                axis = Vec3::xaxis();
+            }
+        }
+        let t = (self.k - origin.z()) / direction.z();
+        if t < t0 || t > t1 {
+            return None;
+        }
+        let x = origin.x() + t * direction.x();
+        let y = origin.y() + t * direction.y();
+        if x < self.x0 || x > self.x1 || y < self.y0 || y > self.y1 {
+            return None;
+        }
+        Some(HitInfo::new(
+            t,
+            ray.at(t),
+            axis,
+            Arc::clone(&self.material),
+            (x - self.x0) / (self.x1 - self.x0),
+            (y - self.y0) / (self.y1 - self.y0),
+        ))
+    }
+}
+
 struct ShapeList {
     pub objects: Vec<Box<dyn Shape>>,
 }
@@ -382,6 +458,48 @@ impl ShapeBuilder {
         self
     }
 
+    fn rect_xy(mut self, x0: f64, x1: f64, y0: f64, y1: f64, k: f64) -> Self {
+        self.shape = Some(Box::new(Rect::new(
+            x0,
+            x1,
+            y0,
+            y1,
+            k,
+            RectAxisType::XY,
+            self.material.unwrap(),
+        )));
+        self.material = None;
+        self
+    }
+
+    fn rect_xz(mut self, x0: f64, x1: f64, y0: f64, y1: f64, k: f64) -> Self {
+        self.shape = Some(Box::new(Rect::new(
+            x0,
+            x1,
+            y0,
+            y1,
+            k,
+            RectAxisType::XZ,
+            self.material.unwrap(),
+        )));
+        self.material = None;
+        self
+    }
+
+    fn rect_yz(mut self, x0: f64, x1: f64, y0: f64, y1: f64, k: f64) -> Self {
+        self.shape = Some(Box::new(Rect::new(
+            x0,
+            x1,
+            y0,
+            y1,
+            k,
+            RectAxisType::YZ,
+            self.material.unwrap(),
+        )));
+        self.material = None;
+        self
+    }
+
     // build
 
     fn build(self) -> Box<dyn Shape> {
@@ -417,18 +535,39 @@ impl SimpleScene {
         //         .sphere(Point3::new(0.0, -100.5, -1.0), 100.0)
         //         .build(),
         // );
+        // world.push(
+        //     ShapeBuilder::new()
+        //         .color_texture(Color::one())
+        //         .diffuse_light()
+        //         .sphere(Point3::new(0.0, 0.0, -1.0), 0.5)
+        //         .build(),
+        // );
+        // world.push(
+        //     ShapeBuilder::new()
+        //         .color_texture(Color::fill(0.8))
+        //         .lambertian()
+        //         .sphere(Point3::new(0.0, -100.5, -1.0), 100.0)
+        //         .build(),
+        // );
         world.push(
             ShapeBuilder::new()
-                .color_texture(Color::one())
+                .color_texture(Color::fill(0.5))
+                .lambertian()
+                .sphere(Point3::new(0.0, 2.0, 0.0), 2.0)
+                .build(),
+        );
+        world.push(
+            ShapeBuilder::new()
+                .color_texture(Color::fill(4.0))
                 .diffuse_light()
-                .sphere(Point3::new(0.0, 0.0, -1.0), 0.5)
+                .rect_xy(3.0, 5.0, 1.0, 3.0, -2.0)
                 .build(),
         );
         world.push(
             ShapeBuilder::new()
                 .color_texture(Color::fill(0.8))
                 .lambertian()
-                .sphere(Point3::new(0.0, -100.5, -1.0), 100.0)
+                .sphere(Point3::new(0.0, -1000.0, 0.0), 1000.0)
                 .build(),
         );
         Self { world }
@@ -442,10 +581,17 @@ impl SimpleScene {
 
 impl SceneWithDepth for SimpleScene {
     fn camera(&self) -> Camera {
-        Camera::new(
-            Vec3::new(4.0, 0.0, 0.0),
-            Vec3::new(0.0, 2.0, 0.0),
-            Vec3::new(-2.0, -1.0, -1.0),
+        // Camera::new(
+        //     Vec3::new(4.0, 0.0, 0.0),
+        //     Vec3::new(0.0, 2.0, 0.0),
+        //     Vec3::new(-2.0, -1.0, -1.0),
+        // )
+        Camera::from_look_at(
+            Vec3::new(13.0, 2.0, 3.0),
+            Vec3::yaxis(),
+            Vec3::yaxis(),
+            30.0,
+            self.aspect(),
         )
     }
     fn trace(&self, ray: Ray, depth: usize) -> Color {
