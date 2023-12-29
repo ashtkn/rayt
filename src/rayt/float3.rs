@@ -84,9 +84,9 @@ impl Float3 {
         ])
     }
     pub fn length(&self) -> f64 {
-        self.length_squered().sqrt()
+        self.length_squared().sqrt()
     }
-    pub fn length_squered(&self) -> f64 {
+    pub fn length_squared(&self) -> f64 {
         self.0.iter().fold(0.0, |acc, x| acc + x * x)
     }
     pub fn normalize(&self) -> Self {

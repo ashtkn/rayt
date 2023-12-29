@@ -37,10 +37,10 @@ impl Quat {
         self.0.dot(rhs.0) + self.1 * rhs.1
     }
     pub fn length(&self) -> f64 {
-        self.length_squered().sqrt()
+        self.length_squared().sqrt()
     }
-    pub fn length_squered(&self) -> f64 {
-        self.0.length_squered() + self.1.powi(2)
+    pub fn length_squared(&self) -> f64 {
+        self.0.length_squared() + self.1.powi(2)
     }
     pub fn normalize(&self) -> Self {
         let recip = self.length().recip();
