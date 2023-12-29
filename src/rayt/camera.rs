@@ -25,7 +25,7 @@ impl Camera {
         view_fov: f64,
         aspect: f64,
     ) -> Self {
-        let half_h = (view_fov.to_radians() + 0.5).tan();
+        let half_h = (view_fov.to_radians() * 0.5).tan();
         let half_w = aspect * half_h;
         let w = (origin - look_at).normalize();
         let u = view_up.cross(w).normalize();
