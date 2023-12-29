@@ -107,6 +107,9 @@ impl Shape for ShapeList {
 
 trait Material: Sync + Send {
     fn scatter(&self, ray: &Ray, hit: &HitInfo) -> Option<ScatterInfo>;
+    fn emitted(&self, _ray: &Ray, _hit: &HitInfo) -> Color {
+        Color::zero()
+    }
 }
 
 struct ScatterInfo {
@@ -288,6 +291,26 @@ impl Texture for ImageTexture {
     }
 }
 
+struct DiffusedLight {
+    emit: Box<dyn Texture>,
+}
+
+impl DiffusedLight {
+    fn new(emit: Box<dyn Texture>) -> Self {
+        Self { emit }
+    }
+}
+
+impl Material for DiffusedLight {
+    fn scatter(&self, _ray: &Ray, _hit: &HitInfo) -> Option<ScatterInfo> {
+        None
+    }
+
+    fn emitted(&self, _ray: &Ray, hit: &HitInfo) -> Color {
+        self.emit.value(hit.u, hit.v, hit.p)
+    }
+}
+
 struct ShapeBuilder {
     texture: Option<Box<dyn Texture>>,
     material: Option<Arc<dyn Material>>,
@@ -321,6 +344,12 @@ impl ShapeBuilder {
 
     fn image_texture(mut self, path: &str) -> Self {
         self.texture = Some(Box::new(ImageTexture::new(path)));
+        self
+    }
+
+    fn diffuse_light(mut self) -> Self {
+        self.material = Some(Arc::new(DiffusedLight::new(self.texture.unwrap())));
+        self.texture = None;
         self
     }
 
@@ -367,32 +396,47 @@ struct SimpleScene {
 impl SimpleScene {
     fn new() -> Self {
         let mut world = ShapeList::new();
+        // world.push(
+        //     ShapeBuilder::new()
+        //         .image_texture("resources/Bricks082A_1K_Color.jpg")
+        //         .lambertian()
+        //         .sphere(Point3::new(0.6, 0.0, -1.0), 0.5)
+        //         .build(),
+        // );
+        // world.push(
+        //     ShapeBuilder::new()
+        //         .color_texture(Color::new(0.8, 0.8, 0.8))
+        //         .metal(0.4)
+        //         .sphere(Point3::new(-0.6, 0.0, -1.0), 0.5)
+        //         .build(),
+        // );
+        // world.push(
+        //     ShapeBuilder::new()
+        //         .checker_texture(Color::new(0.8, 0.8, 0.0), Color::new(0.8, 0.2, 0.0), 10.0)
+        //         .lambertian()
+        //         .sphere(Point3::new(0.0, -100.5, -1.0), 100.0)
+        //         .build(),
+        // );
         world.push(
             ShapeBuilder::new()
-                .image_texture("resources/Bricks082A_1K_Color.jpg")
-                .lambertian()
-                .sphere(Point3::new(0.6, 0.0, -1.0), 0.5)
+                .color_texture(Color::one())
+                .diffuse_light()
+                .sphere(Point3::new(0.0, 0.0, -1.0), 0.5)
                 .build(),
         );
         world.push(
             ShapeBuilder::new()
-                .color_texture(Color::new(0.8, 0.8, 0.8))
-                .metal(0.4)
-                .sphere(Point3::new(-0.6, 0.0, -1.0), 0.5)
-                .build(),
-        );
-        world.push(
-            ShapeBuilder::new()
-                .checker_texture(Color::new(0.8, 0.8, 0.0), Color::new(0.8, 0.2, 0.0), 10.0)
+                .color_texture(Color::fill(0.8))
                 .lambertian()
                 .sphere(Point3::new(0.0, -100.5, -1.0), 100.0)
                 .build(),
         );
         Self { world }
     }
-    fn background(&self, d: Vec3) -> Color {
-        let t = 0.5 * (d.normalize().y() + 1.0);
-        Color::one().lerp(Color::new(0.5, 0.7, 1.0), t)
+    fn background(&self, _d: Vec3) -> Color {
+        // let t = 0.5 * (d.normalize().y() + 1.0);
+        // Color::one().lerp(Color::new(0.5, 0.7, 1.0), t)
+        Color::fill(0.1)
     }
 }
 
@@ -407,15 +451,16 @@ impl SceneWithDepth for SimpleScene {
     fn trace(&self, ray: Ray, depth: usize) -> Color {
         let hit_info = self.world.hit(&ray, 0.001, f64::MAX);
         if let Some(hit) = hit_info {
+            let emitted = hit.m.emitted(&ray, &hit);
             let scatter_info = if depth > 0 {
                 hit.m.scatter(&ray, &hit)
             } else {
                 None
             };
             if let Some(scatter) = scatter_info {
-                return scatter.albedo * self.trace(scatter.ray, depth - 1);
+                emitted + scatter.albedo * self.trace(scatter.ray, depth - 1)
             } else {
-                return Color::zero();
+                emitted
             }
         } else {
             self.background(ray.direction)
