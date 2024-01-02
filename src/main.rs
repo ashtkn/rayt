@@ -775,6 +775,7 @@ impl CornelBoxScene {
                 .color_texture(Color::fill(15.0))
                 .diffuse_light()
                 .rect_xz(213.0, 343.0, 227.0, 332.0, 554.0)
+                .flip_face()
                 .build(),
         );
         world.push(
