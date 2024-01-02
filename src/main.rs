@@ -231,6 +231,61 @@ impl Shape for FlipFace {
     }
 }
 
+struct Translate {
+    shape: Box<dyn Shape>,
+    offset: Point3,
+}
+
+impl Translate {
+    fn new(shape: Box<dyn Shape>, offset: Point3) -> Self {
+        Self { shape, offset }
+    }
+}
+
+impl Shape for Translate {
+    fn hit(&self, ray: &Ray, t0: f64, t1: f64) -> Option<HitInfo> {
+        let moved_ray = Ray::new(ray.origin - self.offset, ray.direction);
+        if let Some(hit) = self.shape.hit(&moved_ray, t0, t1) {
+            Some(HitInfo {
+                p: hit.p + self.offset,
+                ..hit
+            })
+        } else {
+            None
+        }
+    }
+}
+
+struct Rotate {
+    shape: Box<dyn Shape>,
+    quat: Quat,
+}
+
+impl Rotate {
+    fn new(shape: Box<dyn Shape>, axis: Vec3, angle: f64) -> Self {
+        Self {
+            shape,
+            quat: Quat::from_rot(axis, angle.to_radians()),
+        }
+    }
+}
+
+impl Shape for Rotate {
+    fn hit(&self, ray: &Ray, t0: f64, t1: f64) -> Option<HitInfo> {
+        let revq = self.quat.conj();
+        let rotated_ray = Ray::new(revq.rotate(ray.origin), revq.rotate(ray.direction));
+        if let Some(hit) = self.shape.hit(&rotated_ray, t0, t1) {
+            Some(HitInfo {
+                p: self.quat.rotate(hit.p),
+                n: self.quat.rotate(hit.n),
+                ..hit
+            })
+        } else {
+            None
+        }
+    }
+}
+
 struct ShapeList {
     pub objects: Vec<Box<dyn Shape>>,
 }
@@ -591,8 +646,20 @@ impl ShapeBuilder {
         self
     }
 
+    // decorators
+
     fn flip_face(mut self) -> Self {
         self.shape = Some(Box::new(FlipFace::new(self.shape.unwrap())));
+        self
+    }
+
+    fn translate(mut self, offset: Point3) -> Self {
+        self.shape = Some(Box::new(Translate::new(self.shape.unwrap(), offset)));
+        self
+    }
+
+    fn rotate(mut self, axis: Vec3, angle: f64) -> Self {
+        self.shape = Some(Box::new(Rotate::new(self.shape.unwrap(), axis, angle)));
         self
     }
 
@@ -872,24 +939,42 @@ impl CornelBoxScene {
                 .build(),
         );
 
+        // world.push(
+        //     ShapeBuilder::new()
+        //         .color_texture(white)
+        //         .lambertian()
+        //         .box3d(
+        //             Point3::new(130.0, 0.0, 65.0),
+        //             Point3::new(295.0, 165.0, 230.0),
+        //         )
+        //         .build(),
+        // );
+        // world.push(
+        //     ShapeBuilder::new()
+        //         .color_texture(white)
+        //         .lambertian()
+        //         .box3d(
+        //             Point3::new(265.0, 0.0, 295.0),
+        //             Point3::new(430.0, 330.0, 460.0),
+        //         )
+        //         .build(),
+        // );
         world.push(
             ShapeBuilder::new()
                 .color_texture(white)
                 .lambertian()
-                .box3d(
-                    Point3::new(130.0, 0.0, 65.0),
-                    Point3::new(295.0, 165.0, 230.0),
-                )
+                .box3d(Point3::zero(), Point3::fill(165.0))
+                .rotate(Vec3::yaxis(), -18.0)
+                .translate(Point3::new(130.0, 0.0, 65.0))
                 .build(),
         );
         world.push(
             ShapeBuilder::new()
                 .color_texture(white)
                 .lambertian()
-                .box3d(
-                    Point3::new(265.0, 0.0, 295.0),
-                    Point3::new(430.0, 330.0, 460.0),
-                )
+                .box3d(Point3::zero(), Point3::new(165.0, 330.0, 165.0))
+                .rotate(Vec3::yaxis(), 15.0)
+                .translate(Point3::new(265.0, 0.0, 295.0))
                 .build(),
         );
 
