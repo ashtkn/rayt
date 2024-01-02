@@ -152,6 +152,26 @@ impl Shape for Rect {
     }
 }
 
+struct FlipFace {
+    shape: Box<dyn Shape>,
+}
+
+impl FlipFace {
+    fn new(shape: Box<dyn Shape>) -> Self {
+        Self { shape }
+    }
+}
+
+impl Shape for FlipFace {
+    fn hit(&self, ray: &Ray, t0: f64, t1: f64) -> Option<HitInfo> {
+        if let Some(hit) = self.shape.hit(ray, t0, t1) {
+            Some(HitInfo { n: -hit.n, ..hit })
+        } else {
+            None
+        }
+    }
+}
+
 struct ShapeList {
     pub objects: Vec<Box<dyn Shape>>,
 }
@@ -500,6 +520,11 @@ impl ShapeBuilder {
         self
     }
 
+    fn flip_face(mut self) -> Self {
+        self.shape = Some(Box::new(FlipFace::new(self.shape.unwrap())));
+        self
+    }
+
     // build
 
     fn build(self) -> Box<dyn Shape> {
@@ -718,6 +743,108 @@ impl SceneWithDepth for SimpleScene {
 //     }
 // }
 
+struct CornelBoxScene {
+    world: ShapeList,
+}
+
+impl CornelBoxScene {
+    fn new() -> Self {
+        let mut world = ShapeList::new();
+
+        let red = Color::new(0.64, 0.05, 0.05);
+        let white = Color::fill(0.73);
+        let green = Color::new(0.12, 0.45, 0.15);
+
+        world.push(
+            ShapeBuilder::new()
+                .color_texture(green)
+                .lambertian()
+                .rect_yz(0.0, 555.0, 0.0, 555.0, 555.0)
+                .flip_face()
+                .build(),
+        );
+        world.push(
+            ShapeBuilder::new()
+                .color_texture(red)
+                .lambertian()
+                .rect_yz(0.0, 555.0, 0.0, 555.0, 0.0)
+                .build(),
+        );
+        world.push(
+            ShapeBuilder::new()
+                .color_texture(Color::fill(15.0))
+                .diffuse_light()
+                .rect_xz(213.0, 343.0, 227.0, 332.0, 554.0)
+                .build(),
+        );
+        world.push(
+            ShapeBuilder::new()
+                .color_texture(white)
+                .lambertian()
+                .rect_xz(0.0, 555.0, 0.0, 555.0, 555.0)
+                .flip_face()
+                .build(),
+        );
+        world.push(
+            ShapeBuilder::new()
+                .color_texture(white)
+                .lambertian()
+                .rect_xz(0.0, 555.0, 0.0, 555.0, 0.0)
+                .build(),
+        );
+        world.push(
+            ShapeBuilder::new()
+                .color_texture(white)
+                .lambertian()
+                .rect_xy(0.0, 555.0, 0.0, 555.0, 555.0)
+                .flip_face()
+                .build(),
+        );
+        Self { world }
+    }
+    fn background(&self, _d: Vec3) -> Color {
+        // let t = 0.5 * (d.normalize().y() + 1.0);
+        // Color::one().lerp(Color::new(0.5, 0.7, 1.0), t)
+        Color::fill(0.0)
+    }
+}
+
+impl SceneWithDepth for CornelBoxScene {
+    fn camera(&self) -> Camera {
+        Camera::from_look_at(
+            Point3::new(278.0, 278.0, -800.0),
+            Point3::new(278.0, 278.0, 0.0),
+            Vec3::yaxis(),
+            40.0,
+            self.aspect(),
+        )
+    }
+    fn trace(&self, ray: Ray, depth: usize) -> Color {
+        let hit_info = self.world.hit(&ray, 0.001, f64::MAX);
+        if let Some(hit) = hit_info {
+            let emitted = hit.m.emitted(&ray, &hit);
+            let scatter_info = if depth > 0 {
+                hit.m.scatter(&ray, &hit)
+            } else {
+                None
+            };
+            if let Some(scatter) = scatter_info {
+                emitted + scatter.albedo * self.trace(scatter.ray, depth - 1)
+            } else {
+                emitted
+            }
+        } else {
+            self.background(ray.direction)
+        }
+    }
+    fn width(&self) -> u32 {
+        200
+    }
+    fn height(&self) -> u32 {
+        200
+    }
+}
+
 fn main() {
-    render_aa_with_depth(SimpleScene::new());
+    render_aa_with_depth(CornelBoxScene::new());
 }
