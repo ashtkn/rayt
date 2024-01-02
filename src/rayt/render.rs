@@ -3,8 +3,8 @@ use crate::rayt::*;
 use image::{Rgb, RgbImage};
 use rayon::prelude::*;
 
-const IMAGE_WIDTH: u32 = 800;
-const IMAGE_HEIGHT: u32 = 400;
+const IMAGE_WIDTH: u32 = 200;
+const IMAGE_HEIGHT: u32 = 100;
 const OUTPUT_FILENAME: &str = "render.png";
 const BACKUP_FILENAME: &str = "render_back.png";
 const SAMPLES_PER_PIXEL: usize = 8;
