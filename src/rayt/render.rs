@@ -2,6 +2,7 @@ use crate::rayt::*;
 
 use image::{Rgb, RgbImage};
 use rayon::prelude::*;
+use std::{fs, path::Path};
 
 const IMAGE_WIDTH: u32 = 200;
 const IMAGE_HEIGHT: u32 = 100;
@@ -12,11 +13,10 @@ const GAMMA_FACTOR: f64 = 2.2;
 const MAX_RAY_BOUNCE_DEPTH: usize = 50;
 
 fn backup() {
-    let output_path = std::path::Path::new(OUTPUT_FILENAME);
+    let output_path = Path::new(OUTPUT_FILENAME);
     if output_path.exists() {
         println!("backup {:?} -> {:?}", OUTPUT_FILENAME, BACKUP_FILENAME);
-        // replacing the original file if it is
-        std::fs::rename(OUTPUT_FILENAME, BACKUP_FILENAME).unwrap();
+        fs::rename(OUTPUT_FILENAME, BACKUP_FILENAME).unwrap();
     }
 }
 
@@ -73,7 +73,7 @@ pub fn render(scene: impl Scene + Sync) {
             pixel[1] = rgb[1];
             pixel[2] = rgb[2];
         });
-    img.save(String::from(OUTPUT_FILENAME)).unwrap();
+    img.save(OUTPUT_FILENAME).unwrap();
     draw_in_window(BACKUP_FILENAME, img).unwrap();
 }
 
@@ -101,7 +101,7 @@ pub fn render_aa(scene: impl Scene + Sync) {
             pixel[1] = rgb[1];
             pixel[2] = rgb[2];
         });
-    img.save(String::from(OUTPUT_FILENAME)).unwrap();
+    img.save(OUTPUT_FILENAME).unwrap();
     draw_in_window(BACKUP_FILENAME, img).unwrap();
 }
 
@@ -129,6 +129,6 @@ pub fn render_aa_with_depth(scene: impl SceneWithDepth + Sync) {
             pixel[1] = rgb[1];
             pixel[2] = rgb[2];
         });
-    img.save(String::from(OUTPUT_FILENAME)).unwrap();
+    img.save(OUTPUT_FILENAME).unwrap();
     draw_in_window(BACKUP_FILENAME, img).unwrap();
 }
