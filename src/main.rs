@@ -21,7 +21,7 @@ impl HitInfo {
     }
 }
 
-trait Shape: Sync {
+trait Shape: Send + Sync {
     fn hit(&self, ray: &Ray, t0: f64, t1: f64) -> Option<HitInfo>;
 }
 
