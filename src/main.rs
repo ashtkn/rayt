@@ -813,8 +813,8 @@ impl CornelBoxScene {
 impl SceneWithDepth for CornelBoxScene {
     fn camera(&self) -> Camera {
         Camera::from_look_at(
-            Point3::new(278.0, 278.0, -800.0),
-            Point3::new(278.0, 278.0, 0.0),
+            Vec3::new(278.0, 278.0, -800.0),
+            Vec3::new(278.0, 278.0, 0.0),
             Vec3::yaxis(),
             40.0,
             self.aspect(),
