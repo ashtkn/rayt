@@ -1,5 +1,5 @@
 use image::RgbImage;
-use minifb::{Key, Window, WindowOptions};
+use minifb::{Key, KeyRepeat, Window, WindowOptions};
 
 pub fn draw_in_window(backup_filename: &str, pixels: RgbImage) -> minifb::Result<()> {
     if cfg!(test) {
@@ -30,8 +30,8 @@ pub fn draw_in_window(backup_filename: &str, pixels: RgbImage) -> minifb::Result
     let mut backup_buffer: Option<Vec<u32>> = None;
     let mut show_backup = false;
 
-    while window.is_open() && !window.is_key_down(minifb::Key::Escape) {
-        if window.is_key_pressed(Key::D, minifb::KeyRepeat::No) {
+    while window.is_open() && !window.is_key_down(Key::Escape) {
+        if window.is_key_pressed(Key::D, KeyRepeat::No) {
             if backup_buffer.is_none() {
                 if let Ok(img) = image::open(backup_filename) {
                     let backup_image = img.to_rgb8();
