@@ -152,6 +152,65 @@ impl Shape for Rect {
     }
 }
 
+struct Box3D {
+    p0: Point3,
+    p1: Point3,
+    shapes: ShapeList,
+}
+
+impl Box3D {
+    fn new(p0: Point3, p1: Point3, material: Arc<dyn Material>) -> Self {
+        let mut shapes = ShapeList::new();
+        shapes.push(
+            ShapeBuilder::new()
+                .material(Arc::clone(&material))
+                .rect_xy(p0.x(), p1.x(), p0.y(), p1.y(), p1.z())
+                .build(),
+        );
+        shapes.push(
+            ShapeBuilder::new()
+                .material(Arc::clone(&material))
+                .rect_xy(p0.x(), p1.x(), p0.y(), p1.y(), p0.z())
+                .flip_face()
+                .build(),
+        );
+        shapes.push(
+            ShapeBuilder::new()
+                .material(Arc::clone(&material))
+                .rect_xz(p0.x(), p1.x(), p0.z(), p1.z(), p1.y())
+                .build(),
+        );
+        shapes.push(
+            ShapeBuilder::new()
+                .material(Arc::clone(&material))
+                .rect_xz(p0.x(), p1.x(), p0.z(), p1.z(), p0.y())
+                .flip_face()
+                .build(),
+        );
+        shapes.push(
+            ShapeBuilder::new()
+                .material(Arc::clone(&material))
+                .rect_yz(p0.y(), p1.y(), p0.z(), p1.z(), p1.x())
+                .build(),
+        );
+        shapes.push(
+            ShapeBuilder::new()
+                .material(Arc::clone(&material))
+                .rect_yz(p0.y(), p1.y(), p0.z(), p1.z(), p0.x())
+                .flip_face()
+                .build(),
+        );
+
+        Self { p0, p1, shapes }
+    }
+}
+
+impl Shape for Box3D {
+    fn hit(&self, ray: &Ray, t0: f64, t1: f64) -> Option<HitInfo> {
+        self.shapes.hit(ray, t0, t1)
+    }
+}
+
 struct FlipFace {
     shape: Box<dyn Shape>,
 }
@@ -449,6 +508,12 @@ impl ShapeBuilder {
         self
     }
 
+    fn material(mut self, material: Arc<dyn Material>) -> Self {
+        self.material = Some(material);
+        self.texture = None;
+        self
+    }
+
     // Material
 
     fn lambertian(mut self) -> Self {
@@ -516,6 +581,12 @@ impl ShapeBuilder {
             RectAxisType::YZ,
             self.material.unwrap(),
         )));
+        self.material = None;
+        self
+    }
+
+    fn box3d(mut self, p0: Point3, p1: Point3) -> Self {
+        self.shape = Some(Box::new(Box3D::new(p0, p1, self.material.unwrap())));
         self.material = None;
         self
     }
@@ -775,7 +846,6 @@ impl CornelBoxScene {
                 .color_texture(Color::fill(15.0))
                 .diffuse_light()
                 .rect_xz(213.0, 343.0, 227.0, 332.0, 554.0)
-                .flip_face()
                 .build(),
         );
         world.push(
@@ -801,6 +871,28 @@ impl CornelBoxScene {
                 .flip_face()
                 .build(),
         );
+
+        world.push(
+            ShapeBuilder::new()
+                .color_texture(white)
+                .lambertian()
+                .box3d(
+                    Point3::new(130.0, 0.0, 65.0),
+                    Point3::new(295.0, 165.0, 230.0),
+                )
+                .build(),
+        );
+        world.push(
+            ShapeBuilder::new()
+                .color_texture(white)
+                .lambertian()
+                .box3d(
+                    Point3::new(265.0, 0.0, 295.0),
+                    Point3::new(430.0, 330.0, 460.0),
+                )
+                .build(),
+        );
+
         Self { world }
     }
     fn background(&self, _d: Vec3) -> Color {
