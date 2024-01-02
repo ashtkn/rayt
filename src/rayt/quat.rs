@@ -27,9 +27,7 @@ impl Quat {
     pub const fn zero() -> Self {
         Quat::new(0.0, 0.0, 0.0, 0.0)
     }
-}
 
-impl Quat {
     pub fn conj(&self) -> Self {
         Quat(-self.0, self.1)
     }
@@ -46,16 +44,12 @@ impl Quat {
         let recip = self.length().recip();
         Quat(self.0 * recip, self.1 * recip)
     }
-}
 
-impl Quat {
     pub fn to_array(&self) -> [f64; 4] {
         let [x, y, z] = self.0.to_array();
         [x, y, z, self.1]
     }
-}
 
-impl Quat {
     pub fn rotate(&self, p: Vec3) -> Vec3 {
         let [x1, y1, z1, w1] = self.to_array();
         let [x2, y2, z2] = p.to_array();
