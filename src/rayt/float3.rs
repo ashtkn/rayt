@@ -111,7 +111,7 @@ impl FromIterator<f64> for Float3 {
 impl std::ops::Neg for Float3 {
     type Output = Self;
     fn neg(self) -> Self {
-        Self::from_iter(self.0.map(|x| -x))
+        Self::from_iter(self.0.iter().map(|x| -x))
     }
 }
 
@@ -126,7 +126,7 @@ impl std::ops::AddAssign<Float3> for Float3 {
 impl std::ops::Add<Float3> for Float3 {
     type Output = Self;
     fn add(self, rhs: Float3) -> Self {
-        Self::from_iter(self.iter().zip(rhs.iter()).map(|(l, r)| l + r))
+        Self::from_iter(self.0.iter().zip(rhs.0.iter()).map(|(l, r)| l + r))
     }
 }
 
@@ -141,14 +141,14 @@ impl std::ops::SubAssign<Float3> for Float3 {
 impl std::ops::Sub<Float3> for Float3 {
     type Output = Self;
     fn sub(self, rhs: Float3) -> Self {
-        Self::from_iter(self.iter().zip(rhs.iter()).map(|(l, r)| l - r))
+        Self::from_iter(self.0.iter().zip(rhs.0.iter()).map(|(l, r)| l - r))
     }
 }
 
 impl std::ops::Mul<Float3> for Float3 {
     type Output = Self;
     fn mul(self, rhs: Float3) -> Self {
-        Self::from_iter(self.iter().zip(rhs.iter()).map(|(l, r)| l * r))
+        Self::from_iter(self.0.iter().zip(rhs.0.iter()).map(|(l, r)| l * r))
     }
 }
 
@@ -163,7 +163,7 @@ impl std::ops::MulAssign<f64> for Float3 {
 impl std::ops::Mul<f64> for Float3 {
     type Output = Self;
     fn mul(self, rhs: f64) -> Self {
-        Self::from_iter(self.iter().map(|x| x * rhs))
+        Self::from_iter(self.0.iter().map(|x| x * rhs))
     }
 }
 
@@ -185,7 +185,7 @@ impl std::ops::DivAssign<f64> for Float3 {
 impl std::ops::Div<f64> for Float3 {
     type Output = Self;
     fn div(self, rhs: f64) -> Self {
-        Self::from_iter(self.iter().map(|x| x / rhs))
+        Self::from_iter(self.0.iter().map(|x| x / rhs))
     }
 }
 
